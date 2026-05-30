@@ -1,7 +1,5 @@
 # MyPet — Aplicativo Mobile de Rede Social para Tutores de Pets
 
-# MyPet — Aplicativo Mobile de Rede Social para Tutores de Pets
-
 ## 📌 Sobre o projeto
 
 O **MyPet** é um aplicativo mobile desenvolvido para a disciplina **Desenvolver Aplicativos para Dispositivos Móveis e IoT**.
