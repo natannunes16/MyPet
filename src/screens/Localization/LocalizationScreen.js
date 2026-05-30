@@ -112,7 +112,7 @@ export default function LocalizationScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.lostModeBtn}>
+          <TouchableOpacity style={styles.lostModeBtn} onPress={() => navigation.navigate('ModoPerdido')}>
             <Ionicons name="warning-outline" size={20} color="#FFF" style={{ marginRight: 8 }} />
             <Text style={styles.lostModeBtnText}>Ativar modo perdido</Text>
           </TouchableOpacity>

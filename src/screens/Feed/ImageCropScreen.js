@@ -25,9 +25,9 @@ const ASPECT_RATIOS = [
 ];
 
 export default function ImageCropScreen({ route, navigation }) {
-  const { imageUri, imageWidth, imageHeight, onCropDone } = route.params;
+  const { imageUri, imageWidth, imageHeight, forceRatio } = route.params;
 
-  const [selectedRatio, setSelectedRatio] = useState(0); // index
+  const [selectedRatio, setSelectedRatio] = useState(forceRatio ? 1 : 0); // index 1 is 1:1
   const [cropBox, setCropBox] = useState({ x: 0, y: 0, w: 0, h: 0 });
   const [imageLayout, setImageLayout] = useState({ x: 0, y: 0, w: 0, h: 0 });
   const cropRef = useRef({ x: 0, y: 0, w: 0, h: 0 });
@@ -250,31 +250,33 @@ export default function ImageCropScreen({ route, navigation }) {
       </View>
 
       {/* Aspect ratio selector */}
-      <View style={styles.ratiosBar}>
-        <View style={styles.ratiosRow}>
-          {ASPECT_RATIOS.map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[styles.ratioBtn, selectedRatio === index && styles.ratioBtnActive]}
-              onPress={() => onRatioChange(index)}
-            >
-              {item.icon ? (
-                <Ionicons
-                  name={item.icon}
-                  size={20}
-                  color={selectedRatio === index ? colors.primary : 'rgba(255,255,255,0.6)'}
-                />
-              ) : null}
-              <Text style={[
-                styles.ratioLabel,
-                selectedRatio === index && styles.ratioLabelActive,
-              ]}>
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+      {!forceRatio && (
+        <View style={styles.ratiosBar}>
+          <View style={styles.ratiosRow}>
+            {ASPECT_RATIOS.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[styles.ratioBtn, selectedRatio === index && styles.ratioBtnActive]}
+                onPress={() => onRatioChange(index)}
+              >
+                {item.icon ? (
+                  <Ionicons
+                    name={item.icon}
+                    size={20}
+                    color={selectedRatio === index ? colors.primary : 'rgba(255,255,255,0.6)'}
+                  />
+                ) : null}
+                <Text style={[
+                  styles.ratioLabel,
+                  selectedRatio === index && styles.ratioLabelActive,
+                ]}>
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
-      </View>
+      )}
     </SafeAreaView>
   );
 }

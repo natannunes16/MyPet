@@ -14,7 +14,7 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function CreatePostScreen({ navigation, route }) {
   const { addPost } = useFeed();
-  const { profile } = usePet();
+  const { profile, pets } = usePet();
   const [content, setContent] = useState('');
   const [mediaList, setMediaList] = useState([]); // [{ uri, type: 'image'|'video', width, height }]
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,9 +46,13 @@ export default function CreatePostScreen({ navigation, route }) {
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
     setIsSubmitting(true);
+    
+    const petName = pets && pets.length > 0 ? pets[0].name : null;
+    const authorName = petName ? `${profile.name || 'Você'} & ${petName}` : (profile.name || 'Você');
+
     const newPost = {
       id: 'user_' + Date.now().toString(),
-      user: profile.name || 'Você',
+      user: authorName,
       avatar: profile.avatar || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80',
       time: 'agora',
       content: content.trim(),

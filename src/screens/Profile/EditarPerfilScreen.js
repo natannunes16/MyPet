@@ -1,15 +1,54 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, SafeAreaView, TouchableOpacity, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, StyleSheet, SafeAreaView, TouchableOpacity, Image, ScrollView, KeyboardAvoidingView, Platform, Alert, DeviceEventEmitter } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { usePet } from '../../context/PetContext';
 
 export default function EditarPerfilScreen({ navigation }) {
   const { profile, updateProfile } = usePet();
   const [name, setName] = useState(profile.name || 'Ana Carolina Silva');
   const [email, setEmail] = useState(profile.email || 'ana.carolina@exemplo.com');
+  const [avatarUri, setAvatarUri] = useState(profile.avatar);
+
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('onCropDone', (cropped) => {
+      if (cropped && cropped.uri) {
+        setAvatarUri(cropped.uri);
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
+  const pickImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permissão necessária', 'Precisamos de acesso à sua galeria para alterar a foto.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: false,
+        quality: 1,
+      });
+
+      if (!result.canceled && result.assets?.[0]) {
+        const asset = result.assets[0];
+        navigation.navigate('ImageCrop', {
+          imageUri: asset.uri,
+          imageWidth: asset.width,
+          imageHeight: asset.height,
+          forceRatio: true,
+        });
+      }
+    } catch (e) {
+      console.log('Image picker error:', e);
+    }
+  };
 
   const handleSave = () => {
-    updateProfile({ ...profile, name, email });
+    updateProfile({ ...profile, name, email, avatar: avatarUri });
     navigation.goBack();
   };
 
@@ -33,14 +72,14 @@ export default function EditarPerfilScreen({ navigation }) {
           <View style={styles.avatarSection}>
             <View style={styles.avatarContainer}>
               <Image 
-                source={{ uri: profile.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80' }} 
+                source={{ uri: avatarUri || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80' }} 
                 style={styles.avatar} 
               />
-              <TouchableOpacity style={styles.editAvatarBtn}>
+              <TouchableOpacity style={styles.editAvatarBtn} onPress={pickImage}>
                 <Ionicons name="pencil" size={16} color="#FFF" />
               </TouchableOpacity>
             </View>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={pickImage}>
               <Text style={styles.changePhotoText}>Alterar foto</Text>
             </TouchableOpacity>
           </View>

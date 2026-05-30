@@ -5,6 +5,7 @@ import MarketplaceAnimaisScreen from '../screens/Marketplace/MarketplaceAnimaisS
 import MarketplaceProdutosScreen from '../screens/Marketplace/MarketplaceProdutosScreen';
 import CriarAnuncioScreen from '../screens/Marketplace/CriarAnuncioScreen';
 import DetalheDoAnuncioScreen from '../screens/Marketplace/DetalheDoAnuncioScreen';
+import MarketplaceFiltrosScreen from '../screens/Marketplace/MarketplaceFiltrosScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -16,6 +17,7 @@ export default function MarketplaceStack() {
       <Stack.Screen name="MarketplaceProdutos" component={MarketplaceProdutosScreen} />
       <Stack.Screen name="CriarAnuncio" component={CriarAnuncioScreen} />
       <Stack.Screen name="DetalheDoAnuncio" component={DetalheDoAnuncioScreen} />
+      <Stack.Screen name="FiltrosMarketplace" component={MarketplaceFiltrosScreen} options={{ presentation: 'modal' }} />
     </Stack.Navigator>
   );
 }

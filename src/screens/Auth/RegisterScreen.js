@@ -10,7 +10,7 @@ export default function RegisterScreen({ navigation }) {
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   const handleRegister = () => {
-    navigation.replace('AddFirstPet'); 
+    navigation.replace('MainTabs'); 
   };
 
   return (

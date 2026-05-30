@@ -6,13 +6,8 @@ import { usePet } from '../../context/PetContext';
 import MainHeader from '../../components/Header/MainHeader';
 
 export default function ProfileScreen({ navigation }) {
-  const { profile } = usePet();
-
-  // Mock pets for the list based on design
-  const myPets = [
-    { id: '1', name: 'Max', description: 'Cachorro • Beagle', image: 'https://images.unsplash.com/photo-1537151608804-ea2f1ea3b306?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80' },
-    { id: '2', name: 'Luna', description: 'Gato • Persa', image: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80' }
-  ];
+  const { profile, pets } = usePet();
+  const myPets = pets || [];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -26,13 +21,10 @@ export default function ProfileScreen({ navigation }) {
               source={{ uri: profile.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80' }} 
               style={styles.avatar} 
             />
-            <TouchableOpacity style={styles.editAvatarBtn}>
-              <Ionicons name="pencil" size={14} color="#FFF" />
-            </TouchableOpacity>
           </View>
           
           <Text style={styles.name}>{profile.name || 'Ana Silva'}</Text>
-          <Text style={styles.email}>ana.silva@example.com</Text>
+          <Text style={styles.email}>{profile.email || 'ana.silva@example.com'}</Text>
           
           <View style={styles.tagsContainer}>
             <View style={[styles.tag, { backgroundColor: colors.primary }]}>
@@ -47,7 +39,7 @@ export default function ProfileScreen({ navigation }) {
         {/* Meus Pets Section */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Meus Pets</Text>
-          <TouchableOpacity style={styles.addBtn}>
+          <TouchableOpacity style={styles.addBtn} onPress={() => navigation.navigate('AddFirstPet')}>
             <Ionicons name="add" size={16} color="#1976D2" />
             <Text style={styles.addBtnText}>Adicionar</Text>
           </TouchableOpacity>

@@ -1,26 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, Text, StyleSheet, SafeAreaView, TouchableOpacity, 
   FlatList, Image, Dimensions, ScrollView 
 } from 'react-native';
 import { colors } from '../../theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { mockAnimals, mockProducts, mockServices } from '../../mocks/marketplaceMocks';
+import { useMarketplace } from '../../context/MarketplaceContext';
 import MainHeader from '../../components/Header/MainHeader';
 
 const { width } = Dimensions.get('window');
 const CARD_MARGIN = 8;
 const CARD_WIDTH = (width - 32 - CARD_MARGIN * 2) / 2;
 
-export default function MarketplaceScreen({ navigation }) {
+export default function MarketplaceScreen({ navigation, route }) {
+  const { animals, products, services } = useMarketplace();
   const [activeTab, setActiveTab] = useState('Animais');
+  const [selectedFilter, setSelectedFilter] = useState('');
+
+  useEffect(() => {
+    if (route.params?.newTab) {
+      setActiveTab(route.params.newTab);
+    }
+    if (route.params?.selectedFilter !== undefined) {
+      setSelectedFilter(route.params.selectedFilter);
+    }
+  }, [route.params?.newTab, route.params?.timestamp, route.params?.selectedFilter]);
 
   const renderTab = (title) => {
     const isActive = activeTab === title;
     return (
       <TouchableOpacity 
         style={[styles.tab, isActive && styles.activeTab]}
-        onPress={() => setActiveTab(title)}
+        onPress={() => {
+          setActiveTab(title);
+          setSelectedFilter('');
+        }}
         activeOpacity={0.7}
       >
         <Text style={[styles.tabText, isActive && styles.activeTabText]}>
@@ -52,17 +66,33 @@ export default function MarketplaceScreen({ navigation }) {
 
       {/* Section Title */}
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Disponíveis</Text>
-        <TouchableOpacity style={styles.filterBtn}>
+        <Text style={styles.sectionTitle}>Disponíveis {selectedFilter ? `(${selectedFilter})` : ''}</Text>
+        <TouchableOpacity style={styles.filterBtn} onPress={() => navigation.navigate('FiltrosMarketplace', { activeTab, selectedFilter })}>
           <Ionicons name="options-outline" size={20} color={colors.primary} />
           <Text style={styles.filterText}>Filtros</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Inline Add Button */}
+      <TouchableOpacity 
+        style={styles.inlineAddBtn}
+        onPress={() => navigation.navigate('CriarAnuncio', { type: activeTab === 'Animais' ? 'Animal' : activeTab === 'Produtos' ? 'Produto' : 'Serviço' })}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add-circle-outline" size={20} color="#1E1E1E" style={{ marginRight: 8 }} />
+        <Text style={styles.inlineAddBtnText}>
+          Acrescentar {activeTab === 'Animais' ? 'Animal' : activeTab === 'Produtos' ? 'Produto' : 'Serviço'}
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 
   const renderCard = ({ item }) => (
-    <TouchableOpacity style={styles.card} activeOpacity={0.8}>
+    <TouchableOpacity 
+      style={styles.card} 
+      activeOpacity={0.8}
+      onPress={() => navigation.navigate('DetalheDoAnuncio', { itemId: item.id })}
+    >
       <View style={styles.imageContainer}>
         <Image 
           source={typeof item.image === 'string' ? { uri: item.image } : item.image} 
@@ -95,12 +125,26 @@ export default function MarketplaceScreen({ navigation }) {
   );
 
   const getListData = () => {
+    let list = [];
     switch(activeTab) {
-      case 'Animais': return mockAnimals;
-      case 'Produtos': return mockProducts;
-      case 'Serviços': return mockServices;
-      default: return [];
+      case 'Animais': list = animals; break;
+      case 'Produtos': list = products; break;
+      case 'Serviços': list = services; break;
+      default: list = [];
     }
+    
+    if (selectedFilter) {
+      if (activeTab === 'Animais') {
+        list = list.filter(item => 
+          item.tag === selectedFilter.toUpperCase() || 
+          item.species === selectedFilter
+        );
+      } else {
+        list = list.filter(item => item.species === selectedFilter);
+      }
+    }
+    
+    return list;
   };
 
   return (
@@ -109,6 +153,7 @@ export default function MarketplaceScreen({ navigation }) {
 
       <FlatList
         data={getListData()}
+        extraData={{ animals, products, services, activeTab }}
         keyExtractor={(item) => item.id}
         numColumns={2}
         ListHeaderComponent={renderHeader}
@@ -305,5 +350,21 @@ const styles = StyleSheet.create({
   },
   refreshBtn: {
     padding: 10,
+  },
+  inlineAddBtn: {
+    flexDirection: 'row',
+    backgroundColor: '#FFD700',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  inlineAddBtnText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1E1E1E',
   },
 });

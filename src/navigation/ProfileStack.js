@@ -8,6 +8,7 @@ import AlterarSenhaScreen from '../screens/Profile/AlterarSenhaScreen';
 import PrivacidadeScreen from '../screens/Profile/PrivacidadeScreen';
 import DiretrizesComunidadeScreen from '../screens/Profile/DiretrizesComunidadeScreen';
 import StoriesScreen from '../screens/Profile/StoriesScreen';
+import ImageCropScreen from '../screens/Feed/ImageCropScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -22,6 +23,7 @@ export default function ProfileStack() {
       <Stack.Screen name="Privacidade" component={PrivacidadeScreen} />
       <Stack.Screen name="DiretrizesComunidade" component={DiretrizesComunidadeScreen} />
       <Stack.Screen name="Stories" component={StoriesScreen} />
+      <Stack.Screen name="ImageCrop" component={ImageCropScreen} options={{ animation: 'slide_from_bottom' }} />
     </Stack.Navigator>
   );
 }

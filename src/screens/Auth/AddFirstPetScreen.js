@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, TextInput, Image, Alert, DeviceEventEmitter } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import { usePet } from '../../context/PetContext';
 
 export default function AddFirstPetScreen({ navigation }) {
   const [petName, setPetName] = useState('');
@@ -8,9 +10,65 @@ export default function AddFirstPetScreen({ navigation }) {
   const [breed, setBreed] = useState('');
   const [age, setAge] = useState('');
   const [gender, setGender] = useState('Macho');
-  
-  const handleFinish = () => {
-    navigation.replace('MainTabs'); 
+  const [petImageUri, setPetImageUri] = useState(null);
+
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('onCropDone', (cropped) => {
+      if (cropped && cropped.uri) {
+        setPetImageUri(cropped.uri);
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
+  const pickImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permissão necessária', 'Precisamos de acesso à sua galeria para adicionar a foto.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: false,
+        quality: 1,
+      });
+
+      if (!result.canceled && result.assets?.[0]) {
+        const asset = result.assets[0];
+        navigation.navigate('ImageCrop', {
+          imageUri: asset.uri,
+          imageWidth: asset.width,
+          imageHeight: asset.height,
+          forceRatio: true,
+        });
+      }
+    } catch (e) {
+      console.log('Image picker error:', e);
+    }
+  };
+
+  const { addPet } = usePet();
+
+  const handleSave = () => {
+    if (!petName) {
+      Alert.alert('Atenção', 'Por favor, informe o nome do pet.');
+      return;
+    }
+    
+    addPet({
+      id: Date.now().toString(),
+      name: petName,
+      description: `${species} • ${breed || 'SRD'}`,
+      image: petImageUri || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80',
+    });
+    
+    navigation.goBack(); 
+  };
+
+  const handleSkip = () => {
+    navigation.goBack(); 
   };
 
   return (
@@ -35,9 +93,15 @@ export default function AddFirstPetScreen({ navigation }) {
         </View>
 
         <View style={styles.photoContainer}>
-          <TouchableOpacity style={styles.photoUpload}>
-            <Ionicons name="camera-outline" size={32} color="#1976D2" />
-            <Text style={styles.photoText}>Adicionar</Text>
+          <TouchableOpacity style={styles.photoUpload} onPress={pickImage}>
+            {petImageUri ? (
+              <Image source={{ uri: petImageUri }} style={{ width: 100, height: 100, borderRadius: 50 }} />
+            ) : (
+              <>
+                <Ionicons name="camera-outline" size={32} color="#1976D2" />
+                <Text style={styles.photoText}>Adicionar</Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -121,11 +185,11 @@ export default function AddFirstPetScreen({ navigation }) {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.btnSalvar} onPress={handleFinish}>
+          <TouchableOpacity style={styles.btnSalvar} onPress={handleSave}>
             <Text style={styles.btnSalvarText}>Salvar pet</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.btnPular} onPress={handleFinish}>
+          <TouchableOpacity style={styles.btnPular} onPress={handleSkip}>
             <Text style={styles.btnPularText}>Pular por enquanto</Text>
           </TouchableOpacity>
         </View>

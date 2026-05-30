@@ -11,6 +11,8 @@ import DetalheDoPetScreen from '../screens/DetalhePet/DetalheDoPetScreen';
 import EditPetScreen from '../screens/EditPet/EditPetScreen';
 import NotificationsScreen from '../screens/Notifications/NotificationsScreen';
 import TabNavigator from './TabNavigator';
+import ImageCropScreen from '../screens/Feed/ImageCropScreen';
+import ModoPerdidoScreen from '../screens/Localization/ModoPerdidoScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -29,6 +31,8 @@ export default function AppNavigator() {
         <Stack.Screen name="EditPet" component={EditPetScreen} />
         <Stack.Screen name="Notifications" component={NotificationsScreen} />
         <Stack.Screen name="MainTabs" component={TabNavigator} />
+        <Stack.Screen name="ImageCrop" component={ImageCropScreen} options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="ModoPerdido" component={ModoPerdidoScreen} options={{ animation: 'slide_from_bottom' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
