@@ -45,8 +45,8 @@ export default function ProfileScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {myPets.map(pet => (
-          <View key={pet.id} style={styles.petCard}>
+        {myPets.length > 0 ? myPets.map((pet, index) => (
+          <View key={pet.id || index} style={styles.petCard}>
             <Image source={{ uri: pet.image }} style={styles.petImage} />
             <View style={styles.petInfo}>
               <Text style={styles.petName}>{pet.name}</Text>
@@ -61,14 +61,19 @@ export default function ProfileScreen({ navigation }) {
               </TouchableOpacity>
             </View>
           </View>
-        ))}
+        )) : (
+          <View style={styles.emptyPetsContainer}>
+            <Ionicons name="paw-outline" size={40} color="#BDBDBD" />
+            <Text style={styles.emptyPetsText}>Você ainda não tem pets cadastrados.</Text>
+          </View>
+        )}
 
         {/* Menu List Section */}
         <View style={styles.menuContainer}>
           <MenuItem icon="person-outline" title="Editar perfil" onPress={() => navigation.navigate('EditarPerfil')} />
-          <MenuItem icon="mail-outline" title="Alterar e-mail" onPress={() => {}} />
+          <MenuItem icon="mail-outline" title="Alterar e-mail" onPress={() => navigation.navigate('AlterarEmail')} />
           <MenuItem icon="lock-closed-outline" title="Alterar senha" onPress={() => navigation.navigate('AlterarSenha')} />
-          <MenuItem icon="megaphone-outline" title="Meus anúncios" onPress={() => {}} />
+          <MenuItem icon="megaphone-outline" title="Meus anúncios" onPress={() => navigation.navigate('MeusAnuncios')} />
           <MenuItem icon="book-outline" title="Diretrizes" onPress={() => navigation.navigate('DiretrizesComunidade')} />
           <MenuItem icon="settings-outline" title="Configurações" onPress={() => navigation.navigate('Configuracoes')} />
           <MenuItem icon="log-out-outline" title="Sair" color="#D32F2F" isLast={true} onPress={() => navigation.reset({
@@ -247,4 +252,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
+  emptyPetsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 32,
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderStyle: 'dashed',
+  },
+  emptyPetsText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#757575',
+    textAlign: 'center',
+  }
 });

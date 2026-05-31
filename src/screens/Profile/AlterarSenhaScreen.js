@@ -1,11 +1,49 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { usePet } from '../../context/PetContext';
 
 export default function AlterarSenhaScreen({ navigation }) {
+  const { profile, updateProfile } = usePet();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const handleUpdatePassword = () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setErrorMsg('Por favor, preencha todos os campos.');
+      return;
+    }
+
+    if (currentPassword !== profile.password) {
+      setErrorMsg('Senha atual não condiz com a sua senha.');
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setErrorMsg('A nova senha deve ter pelo menos 8 caracteres.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setErrorMsg('A nova senha e a confirmação não coincidem.');
+      return;
+    }
+
+    setErrorMsg('');
+
+    // Atualiza a senha no contexto
+    updateProfile({ password: newPassword });
+
+    // Simulando alteração com sucesso
+    Alert.alert('Sucesso', 'Sua senha foi alterada com sucesso!');
+    navigation.goBack();
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -33,11 +71,13 @@ export default function AlterarSenhaScreen({ navigation }) {
               style={styles.input}
               placeholder="Sua senha atual"
               placeholderTextColor="#9E9E9E"
-              secureTextEntry
+              secureTextEntry={!showCurrent}
               value={currentPassword}
               onChangeText={setCurrentPassword}
             />
-            <Ionicons name="eye-off-outline" size={20} color="#424242" />
+            <TouchableOpacity onPress={() => setShowCurrent(!showCurrent)}>
+              <Ionicons name={showCurrent ? "eye-outline" : "eye-off-outline"} size={20} color="#424242" />
+            </TouchableOpacity>
           </View>
 
           {/* Nova Senha */}
@@ -47,11 +87,13 @@ export default function AlterarSenhaScreen({ navigation }) {
               style={styles.input}
               placeholder="Sua nova senha"
               placeholderTextColor="#9E9E9E"
-              secureTextEntry
+              secureTextEntry={!showNew}
               value={newPassword}
               onChangeText={setNewPassword}
             />
-            <Ionicons name="eye-off-outline" size={20} color="#424242" />
+            <TouchableOpacity onPress={() => setShowNew(!showNew)}>
+              <Ionicons name={showNew ? "eye-outline" : "eye-off-outline"} size={20} color="#424242" />
+            </TouchableOpacity>
           </View>
           <Text style={styles.helperText}>Deve ter pelo menos 8 caracteres.</Text>
 
@@ -62,15 +104,21 @@ export default function AlterarSenhaScreen({ navigation }) {
               style={styles.input}
               placeholder="Repita a nova senha"
               placeholderTextColor="#9E9E9E"
-              secureTextEntry
+              secureTextEntry={!showConfirm}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
             />
-            <Ionicons name="eye-off-outline" size={20} color="#424242" />
+            <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)}>
+              <Ionicons name={showConfirm ? "eye-outline" : "eye-off-outline"} size={20} color="#424242" />
+            </TouchableOpacity>
           </View>
         </View>
 
-        <TouchableOpacity style={styles.btnAtualizar}>
+        {errorMsg ? (
+          <Text style={styles.errorText}>{errorMsg}</Text>
+        ) : null}
+
+        <TouchableOpacity style={styles.btnAtualizar} onPress={handleUpdatePassword}>
           <Ionicons name="reload-outline" size={18} color="#000" style={{ marginRight: 8 }} />
           <Text style={styles.btnAtualizarText}>Atualizar senha</Text>
         </TouchableOpacity>
@@ -181,5 +229,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#1976D2',
+  },
+  errorText: {
+    color: '#D32F2F',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 16,
+    fontWeight: 'bold',
   }
 });

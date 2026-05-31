@@ -11,6 +11,7 @@ export const PetProvider = ({ children }) => {
   const [profile, setProfile] = useState({
     name: 'Natan',
     email: 'natan@example.com',
+    password: 'senha.secreta',
     avatar: 'https://via.placeholder.com/150',
   });
 
@@ -64,9 +65,14 @@ export const PetProvider = ({ children }) => {
     setPets((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // Clear all pets (e.g. on new registration/logout)
+  const clearPets = () => {
+    setPets([]);
+  };
+
   return (
     <PetContext.Provider
-      value={{ profile, updateProfile, pets, addPet, updatePet, deletePet }}
+      value={{ profile, updateProfile, pets, addPet, updatePet, deletePet, clearPets }}
     >
       {children}
     </PetContext.Provider>

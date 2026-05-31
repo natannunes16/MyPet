@@ -58,7 +58,7 @@ export default function CreateDiscussionScreen({ navigation }) {
           <View style={styles.formCard}>
             
             {/* Título */}
-            <Text style={styles.label}>Título da discussão</Text>
+            <Text style={[styles.label, { marginBottom: 12, marginTop: 8 }]}>Título da discussão</Text>
             <TextInput
               style={styles.input}
               placeholder="Título da dúvida ou relato"
@@ -69,7 +69,7 @@ export default function CreateDiscussionScreen({ navigation }) {
             />
 
             {/* Categoria */}
-            <Text style={styles.label}>Categoria</Text>
+            <Text style={[styles.label, { marginBottom: 12, marginTop: 8 }]}>Categoria</Text>
             <View style={styles.categoriesContainer}>
               {categories.map((cat) => (
                 <TouchableOpacity
@@ -85,7 +85,10 @@ export default function CreateDiscussionScreen({ navigation }) {
             </View>
 
             {/* Detalhes */}
-            <Text style={styles.label}>Detalhes</Text>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>Detalhes</Text>
+              <Text style={styles.charCounter}>{content.length}/2000</Text>
+            </View>
             <TextInput
               style={[styles.input, styles.textArea]}
               placeholder="Descreva sua situação..."
@@ -94,6 +97,7 @@ export default function CreateDiscussionScreen({ navigation }) {
               onChangeText={setContent}
               multiline
               textAlignVertical="top"
+              maxLength={2000}
             />
 
             {/* Botão Publicar */}
@@ -148,12 +152,21 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    marginBottom: 12,
+    marginTop: 8,
+  },
   label: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#1A1A1A',
-    marginBottom: 12,
-    marginTop: 8,
+  },
+  charCounter: {
+    fontSize: 12,
+    color: '#9E9E9E',
   },
   input: {
     borderWidth: 1,

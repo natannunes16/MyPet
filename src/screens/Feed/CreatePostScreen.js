@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFeed } from '../../context/FeedContext';
 import { usePet } from '../../context/PetContext';
 
-const MAX_CHARS = 280;
+const MAX_CHARS = 300;
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function CreatePostScreen({ navigation, route }) {
@@ -225,7 +225,7 @@ export default function CreatePostScreen({ navigation, route }) {
                 value={content}
                 onChangeText={setContent}
                 autoFocus
-                maxLength={MAX_CHARS + 50}
+                maxLength={MAX_CHARS}
               />
             </View>
           </View>

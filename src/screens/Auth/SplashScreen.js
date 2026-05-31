@@ -17,7 +17,6 @@ export default function SplashScreen({ navigation }) {
           style={styles.logo}
           resizeMode="contain"
         />
-        <Text style={styles.title}>MyPet</Text>
         <Text style={styles.slogan}>Cuidar, conectar e proteger seu pet.</Text>
       </View>
       
@@ -43,24 +42,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 48,
-    fontWeight: '900',
-    color: '#1E1E1E',
-    letterSpacing: -1,
-    marginBottom: 16,
+    width: 280,
+    height: 180,
+    marginBottom: 24,
   },
   slogan: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#424242',
     fontWeight: '500',
     textAlign: 'center',
     paddingHorizontal: 40,
-    lineHeight: 24,
+    lineHeight: 26,
   },
   footer: {
     alignItems: 'center',

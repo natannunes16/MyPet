@@ -1,16 +1,68 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { usePet } from '../../context/PetContext';
 
 export default function RegisterScreen({ navigation }) {
+  const { updateProfile, clearPets } = usePet();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleRegister = () => {
-    navigation.replace('MainTabs'); 
+    if (!name || !email || !password || !confirmPassword) {
+      setErrorMsg('Por favor, preencha todos os campos.');
+      return;
+    }
+
+    if (/\d/.test(name)) {
+      setErrorMsg('O nome não pode conter números.');
+      return;
+    }
+
+    const validDomains = ['@gmail.com', '@outlook.com', '@hotmail.com'];
+    const hasValidDomain = validDomains.some(domain => email.toLowerCase().endsWith(domain));
+
+    if (!hasValidDomain) {
+      setErrorMsg('Use um e-mail válido (@gmail.com, @outlook.com ou @hotmail.com).');
+      return;
+    }
+
+    if (password.length < 8) {
+      setErrorMsg('A senha deve ter no mínimo 8 caracteres.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMsg('As senhas não coincidem.');
+      return;
+    }
+
+    if (!termsAccepted) {
+      setErrorMsg('Você precisa aceitar os Termos de Serviço.');
+      return;
+    }
+
+    setErrorMsg('');
+    
+    // Atualiza o contexto do perfil global com os dados cadastrados
+    updateProfile({ name, email, password });
+    
+    // Limpa os pets da memória e do AsyncStorage para simular uma conta zerada
+    clearPets();
+    AsyncStorage.removeItem('@myPetPets').catch(console.warn);
+    
+    navigation.replace('Login', { 
+      registeredEmail: email, 
+      registeredPassword: password,
+      newlyRegistered: true
+    });
   };
 
   return (
@@ -63,11 +115,13 @@ export default function RegisterScreen({ navigation }) {
               style={styles.input}
               placeholder="Mínimo de 8 caracteres"
               placeholderTextColor="#9E9E9E"
-              secureTextEntry
+              secureTextEntry={!showPassword}
               value={password}
               onChangeText={setPassword}
             />
-            <Ionicons name="eye-outline" size={20} color="#757575" />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#757575" />
+            </TouchableOpacity>
           </View>
 
           <Text style={styles.inputLabel}>Confirmar Senha</Text>
@@ -77,11 +131,13 @@ export default function RegisterScreen({ navigation }) {
               style={styles.input}
               placeholder="Digite a senha novamente"
               placeholderTextColor="#9E9E9E"
-              secureTextEntry
+              secureTextEntry={!showConfirmPassword}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
             />
-            <Ionicons name="eye-outline" size={20} color="#757575" />
+            <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+              <Ionicons name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#757575" />
+            </TouchableOpacity>
           </View>
           
           {/* Checkbox */}
@@ -96,6 +152,11 @@ export default function RegisterScreen({ navigation }) {
               Li e concordo com os <Text style={styles.linkText}>Termos de Serviço</Text> e <Text style={styles.linkText}>Diretrizes da Comunidade</Text>.
             </Text>
           </View>
+
+          {/* Error Message */}
+          {errorMsg ? (
+            <Text style={styles.errorText}>{errorMsg}</Text>
+          ) : null}
 
           <TouchableOpacity style={styles.btnCriar} onPress={handleRegister}>
             <Text style={styles.btnCriarText}>Criar conta</Text>
@@ -206,6 +267,13 @@ const styles = StyleSheet.create({
   },
   linkText: {
     color: '#1976D2',
+  },
+  errorText: {
+    color: '#D32F2F',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 16,
+    fontWeight: 'bold',
   },
   btnCriar: {
     backgroundColor: '#FFD500',

@@ -1,13 +1,39 @@
 import React, { useState, useRef } from 'react';
 import { 
   View, Text, StyleSheet, FlatList, Image, TouchableOpacity, 
-  TextInput, KeyboardAvoidingView, Platform, SafeAreaView, Keyboard
+  TextInput, KeyboardAvoidingView, Platform, SafeAreaView, Keyboard, Animated
 } from 'react-native';
 import { colors } from '../../theme/colors';
 import { mockDiscussions } from '../../mocks/discussionsMocks';
 import { useFeed } from '../../context/FeedContext';
 import { usePet } from '../../context/PetContext';
 import { Ionicons } from '@expo/vector-icons';
+
+const AnimatedLikeButton = ({ initialLikes }) => {
+  const [isLiked, setIsLiked] = useState(false);
+  const [likes, setLikes] = useState(initialLikes || 0);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handleLike = () => {
+    const nextLiked = !isLiked;
+    setIsLiked(nextLiked);
+    setLikes(prev => nextLiked ? prev + 1 : prev - 1);
+
+    Animated.sequence([
+      Animated.timing(scaleAnim, { toValue: 1.3, duration: 150, useNativeDriver: true }),
+      Animated.timing(scaleAnim, { toValue: 1, duration: 150, useNativeDriver: true })
+    ]).start();
+  };
+
+  return (
+    <TouchableOpacity style={styles.commentActionBtn} onPress={handleLike} activeOpacity={0.7}>
+      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        <Ionicons name={isLiked ? "thumbs-up" : "thumbs-up-outline"} size={14} color={isLiked ? colors.primary : colors.textLight} />
+      </Animated.View>
+      <Text style={[styles.commentActionText, isLiked && { color: colors.primary }]}>Útil ({likes})</Text>
+    </TouchableOpacity>
+  );
+};
 
 export default function DiscussionDetailScreen({ route, navigation }) {
   const { discussionId } = route.params;
@@ -122,10 +148,7 @@ export default function DiscussionDetailScreen({ route, navigation }) {
         </View>
         <Text style={styles.commentContent}>{reply.content}</Text>
         <View style={styles.commentActions}>
-          <TouchableOpacity style={styles.commentActionBtn}>
-            <Ionicons name="thumbs-up-outline" size={14} color={colors.textLight} />
-            <Text style={styles.commentActionText}>Útil ({reply.likes})</Text>
-          </TouchableOpacity>
+          <AnimatedLikeButton initialLikes={reply.likes} />
           {/* Pode adicionar responder à tréplica se quiser, mas por simplicidade, responde ao comentário raiz */}
         </View>
       </View>
@@ -144,10 +167,7 @@ export default function DiscussionDetailScreen({ route, navigation }) {
           </View>
           <Text style={styles.commentContent}>{item.content}</Text>
           <View style={styles.commentActions}>
-            <TouchableOpacity style={styles.commentActionBtn}>
-              <Ionicons name="thumbs-up-outline" size={14} color={colors.textLight} />
-              <Text style={styles.commentActionText}>Útil ({item.likes})</Text>
-            </TouchableOpacity>
+            <AnimatedLikeButton initialLikes={item.likes} />
             <TouchableOpacity 
               style={styles.commentActionBtn}
               onPress={() => handleReplyPress(item.id, item.author)}
