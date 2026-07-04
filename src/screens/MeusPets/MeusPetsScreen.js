@@ -8,24 +8,24 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 export default function MeusPetsScreen({ navigation }) {
   const { pets, deletePet } = usePet();
 
-  const confirmDelete = (index) => {
+  const confirmDelete = (id) => {
     Alert.alert('Confirmar exclusão', 'Deseja remover este pet?', [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Excluir', style: 'destructive', onPress: () => deletePet(index) },
+      { text: 'Excluir', style: 'destructive', onPress: () => deletePet(id) },
     ]);
   };
 
-  const renderItem = ({ item, index }) => (
+  const renderItem = ({ item }) => (
     <View style={styles.card}>
-      <TouchableOpacity style={{ flex: 1 }} onPress={() => navigation.navigate('DetalheDoPet', { petId: index })}>
+      <TouchableOpacity style={{ flex: 1 }} onPress={() => navigation.navigate('DetalheDoPet', { pet: item })}>
         <Text style={styles.title}>{item.name || 'Sem nome'}</Text>
         <Text style={styles.subtitle}>Raça: {item.breed || '-'} | Idade: {item.age || '-'}</Text>
       </TouchableOpacity>
       <View style={styles.actions}>
-        <TouchableOpacity onPress={() => navigation.navigate('EditPet', { petIndex: index, petData: item })}>
+        <TouchableOpacity onPress={() => navigation.navigate('EditPet', { pet: item })}>
           <Icon name="edit" size={20} color={colors.textLight} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => confirmDelete(index)} style={{ marginLeft: 12 }}>
+        <TouchableOpacity onPress={() => confirmDelete(item._id)} style={{ marginLeft: 12 }}>
           <Icon name="delete" size={20} color={colors.error} />
         </TouchableOpacity>
       </View>
@@ -42,7 +42,7 @@ export default function MeusPetsScreen({ navigation }) {
       ) : (
         <FlatList
           data={pets}
-          keyExtractor={(_, idx) => idx.toString()}
+          keyExtractor={(item) => item._id || item.id || Math.random().toString()}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
         />

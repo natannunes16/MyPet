@@ -6,6 +6,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../theme/colors';
+import { usePet } from '../../context/PetContext';
+import api from '../../services/api';
 
 export default function ModoPerdidoScreen({ navigation }) {
   const [photoUri, setPhotoUri] = useState(null);
@@ -34,10 +36,37 @@ export default function ModoPerdidoScreen({ navigation }) {
     }
   };
 
-  const handleAlert = () => {
-    Alert.alert('Modo Perdido', 'Alerta criado com sucesso! A comunidade será notificada.', [
-      { text: 'OK', onPress: () => navigation.goBack() }
-    ]);
+  const { profile } = usePet();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleAlert = async () => {
+    if (!location || !features || !phone) {
+      Alert.alert('Atenção', 'Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const payload = {
+      petId: profile.id || profile._id || 'unknown_pet',
+      petName: profile.name || 'Meu Pet',
+      petPhoto: photoUri || profile.avatar || '',
+      address: location,
+      isLost: true,
+      status: 'lost',
+      description: `${features} | Contato: ${phone}`
+    };
+
+    try {
+      await api.post('/locations', payload);
+      Alert.alert('Modo Perdido', 'Alerta criado com sucesso! A comunidade será notificada.', [
+        { text: 'OK', onPress: () => navigation.goBack() }
+      ]);
+    } catch (error) {
+      console.warn('Erro ao criar alerta de modo perdido:', error);
+      Alert.alert('Erro', 'Não foi possível criar o alerta. Tente novamente.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

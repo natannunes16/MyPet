@@ -12,22 +12,21 @@ import {
 import { colors } from '../../theme/colors';
 import { mockProducts, mockAnimals, mockServices } from '../../mocks/marketplaceMocks';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useMarketplace } from '../../context/MarketplaceContext';
 
 export default function DetalheDoAnuncioScreen({ route, navigation }) {
   const { itemId } = route.params || {};
+  const { animals, products, services } = useMarketplace();
 
-  const product = mockProducts.find(p => p.id === itemId);
-  const animal = mockAnimals.find(a => a.id === itemId);
-  const service = mockServices?.find(s => s.id === itemId);
+  const product = products.find(p => p._id === itemId || p.id === itemId);
+  const animal = animals.find(a => a._id === itemId || a.id === itemId);
+  const service = services.find(s => s._id === itemId || s.id === itemId);
 
   const item = product || animal || service || {
-    id: 'mock',
-    name: 'Filhote de Beagle - 3 meses',
-    tag: 'VENDA',
-    image: 'https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?auto=format&fit=crop&w=400&q=80',
-    species: 'Cachorro',
-    breed: 'Beagle',
-    location: 'Vila Mariana, São Paulo - SP'
+    name: 'Anúncio não encontrado',
+    tag: '',
+    image: null,
+    location: ''
   };
 
   const isVenda = item.tag === 'VENDA' || item.tag === 'OFERTA' || item.tag === 'NOVO' || item.tag === 'USADO';
@@ -67,8 +66,28 @@ export default function DetalheDoAnuncioScreen({ route, navigation }) {
   );
 
   const renderImage = () => {
-    const source = typeof item.image === 'string' ? { uri: item.image } : item.image;
-    return <Image source={source} style={styles.image} resizeMode="cover" />;
+    const localImages = {
+      'Coleira Premium': require('../../../assets/marketplace/coleira_premium.png'),
+      'Petiscos Naturais': require('../../../assets/marketplace/petiscos_naturais.png'),
+      'Cama Confortável': require('../../../assets/marketplace/cama_confortavel.png'),
+      'Brinquedo Interativo': require('../../../assets/marketplace/brinquedo_interativo.png'),
+      'Banho e Tosa': require('../../../assets/marketplace/banho_e_tosa.png'),
+      'Consulta Veterinária': require('../../../assets/marketplace/consulta_veterinaria.png'),
+      'Passeador de Cães': require('../../../assets/marketplace/passeador_de_caes.png'),
+      'Hotel para Pets': require('../../../assets/marketplace/hotel_para_pets.png'),
+    };
+    const defaultImg = 'https://images.unsplash.com/photo-1544568100-847a948585b9?auto=format&fit=crop&w=400&q=80';
+    
+    let imageSource = { uri: defaultImg };
+    if (localImages[item.name]) {
+      imageSource = localImages[item.name];
+    } else if (item.image && typeof item.image === 'string' && (item.image.startsWith('http') || item.image.startsWith('file'))) {
+      imageSource = { uri: item.image };
+    } else if (item.image && typeof item.image !== 'string') {
+      imageSource = item.image;
+    }
+
+    return <Image source={imageSource} style={styles.image} resizeMode="cover" />;
   };
 
   return (
@@ -112,14 +131,14 @@ export default function DetalheDoAnuncioScreen({ route, navigation }) {
           <View style={styles.sellerContainer}>
             <View style={styles.sellerInfo}>
               <Image
-                source={{ uri: 'https://randomuser.me/api/portraits/women/44.jpg' }}
+                source={{ uri: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80' }}
                 style={styles.sellerAvatar}
               />
               <View>
-                <Text style={styles.sellerName}>Ana Paula Silva</Text>
+                <Text style={styles.sellerName}>{item.ownerName || 'Usuário'}</Text>
                 <View style={styles.ratingRow}>
                   <Ionicons name="star-outline" size={14} color="#333" />
-                  <Text style={styles.ratingText}>4.8 (24 avaliações)</Text>
+                  <Text style={styles.ratingText}>5.0 (Novo vendedor)</Text>
                 </View>
               </View>
             </View>

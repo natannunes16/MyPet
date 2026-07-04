@@ -16,28 +16,31 @@ export default function CreateDiscussionScreen({ navigation }) {
   const { addDiscussion } = useFeed();
   const { profile } = usePet();
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const categories = ['Saúde', 'Alimentação', 'Comportamento', 'Geral'];
 
-  const handlePost = () => {
+  const handlePost = async () => {
     if (!content.trim() || !title.trim()) {
       alert('Preencha o título e os detalhes!');
       return;
     }
 
+    setIsSubmitting(true);
     const newDiscussion = {
-      id: 'd_' + Date.now(),
       title: title.trim(),
       content: content.trim(),
-      author: profile.name || 'Você',
-      avatar: profile.avatar || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80',
-      time: 'agora',
       category: category,
-      likes: 0,
-      comments: []
     };
 
-    addDiscussion(newDiscussion);
-    navigation.goBack();
+    try {
+      await addDiscussion(newDiscussion);
+      navigation.goBack();
+    } catch (error) {
+      alert('Erro ao criar discussão. Tente novamente.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -104,13 +107,13 @@ export default function CreateDiscussionScreen({ navigation }) {
             <TouchableOpacity 
               style={[
                 styles.publishBtn, 
-                (!content.trim() || !title.trim()) && styles.publishBtnDisabled
+                (!content.trim() || !title.trim() || isSubmitting) && styles.publishBtnDisabled
               ]} 
               onPress={handlePost}
-              disabled={!content.trim() || !title.trim()}
+              disabled={!content.trim() || !title.trim() || isSubmitting}
             >
               <Ionicons name="send-outline" size={20} color="#000" style={{ marginRight: 8 }} />
-              <Text style={styles.publishBtnText}>Publicar tópico</Text>
+              <Text style={styles.publishBtnText}>{isSubmitting ? 'Publicando...' : 'Publicar tópico'}</Text>
             </TouchableOpacity>
 
           </View>

@@ -5,7 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { usePet } from '../../context/PetContext';
 
 export default function EditarPerfilScreen({ navigation }) {
-  const { profile, updateProfile } = usePet();
+  const { profile, updateProfile, updateUserProfile } = usePet();
   const [name, setName] = useState(profile.name || 'Ana Carolina Silva');
   const [email, setEmail] = useState(profile.email || 'ana.carolina@exemplo.com');
   const [avatarUri, setAvatarUri] = useState(profile.avatar);
@@ -47,9 +47,22 @@ export default function EditarPerfilScreen({ navigation }) {
     }
   };
 
-  const handleSave = () => {
-    updateProfile({ ...profile, name, email, avatar: avatarUri });
-    navigation.goBack();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSave = async () => {
+    try {
+      setIsSubmitting(true);
+      if (updateUserProfile) {
+        await updateUserProfile({ name, email, avatar: avatarUri });
+      } else {
+        updateProfile({ ...profile, name, email, avatar: avatarUri });
+      }
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível atualizar o perfil. Tente novamente.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

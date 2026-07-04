@@ -1,13 +1,24 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
 import { colors } from '../../theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { usePet } from '../../context/PetContext';
 import MainHeader from '../../components/Header/MainHeader';
 
 export default function ProfileScreen({ navigation }) {
-  const { profile, pets } = usePet();
+  const { profile, pets, loadingPets, deletePet } = usePet();
   const myPets = pets || [];
+
+  const handleDelete = (id) => {
+    Alert.alert(
+      "Excluir Pet",
+      "Tem certeza que deseja excluir este pet?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Excluir", style: "destructive", onPress: () => deletePet(id) }
+      ]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -39,32 +50,37 @@ export default function ProfileScreen({ navigation }) {
         {/* Meus Pets Section */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Meus Pets</Text>
-          <TouchableOpacity style={styles.addBtn} onPress={() => navigation.navigate('AddFirstPet')}>
+          <TouchableOpacity style={styles.addBtn} onPress={() => navigation.navigate('CadastrarPet')}>
             <Ionicons name="add" size={16} color="#1976D2" />
             <Text style={styles.addBtnText}>Adicionar</Text>
           </TouchableOpacity>
         </View>
 
-        {myPets.length > 0 ? myPets.map((pet, index) => (
-          <View key={pet.id || index} style={styles.petCard}>
-            <Image source={{ uri: pet.image }} style={styles.petImage} />
+        {loadingPets ? (
+          <View style={{ padding: 20, alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={{ marginTop: 10, color: '#757575' }}>Carregando seus pets...</Text>
+          </View>
+        ) : myPets.length > 0 ? myPets.map((pet, index) => (
+          <TouchableOpacity key={pet._id || index} style={styles.petCard} onPress={() => navigation.navigate('DetalheDoPet', { pet })}>
+            <Image source={{ uri: pet.image || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80' }} style={styles.petImage} />
             <View style={styles.petInfo}>
               <Text style={styles.petName}>{pet.name}</Text>
-              <Text style={styles.petDesc}>{pet.description}</Text>
+              <Text style={styles.petDesc}>{pet.breed} • {pet.age} anos</Text>
             </View>
             <View style={styles.petActions}>
-              <TouchableOpacity style={styles.actionIconBtn}>
+              <TouchableOpacity style={styles.actionIconBtn} onPress={() => navigation.navigate('EditPet', { pet })}>
                 <Ionicons name="pencil" size={18} color="#1976D2" />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.actionIconBtn}>
+              <TouchableOpacity style={styles.actionIconBtn} onPress={() => handleDelete(pet._id)}>
                 <Ionicons name="trash-outline" size={18} color="#D32F2F" />
               </TouchableOpacity>
             </View>
-          </View>
+          </TouchableOpacity>
         )) : (
           <View style={styles.emptyPetsContainer}>
             <Ionicons name="paw-outline" size={40} color="#BDBDBD" />
-            <Text style={styles.emptyPetsText}>Você ainda não tem pets cadastrados.</Text>
+            <Text style={styles.emptyPetsText}>Você ainda não possui pets cadastrados.</Text>
           </View>
         )}
 

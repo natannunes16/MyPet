@@ -2,14 +2,18 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, TextInput, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
+import api from '../../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { usePet } from '../../context/PetContext';
 
 export default function LoginScreen({ navigation, route }) {
+  const { updateProfile } = usePet();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
       setError('Por favor, preencha todos os campos para continuar.');
       return;
@@ -20,21 +24,22 @@ export default function LoginScreen({ navigation, route }) {
       return;
     }
     
-    // Check mocked registration credentials if provided
-    if (route.params?.registeredEmail && route.params?.registeredPassword) {
-      if (email !== route.params.registeredEmail || password !== route.params.registeredPassword) {
-        setError('E-mail ou senha incorretos.');
-        return;
+    try {
+      const response = await api.post('/auth/login', { email: email.trim().toLowerCase(), password });
+      
+      if (response.data && response.data.token) {
+        await AsyncStorage.setItem('@myPetToken', response.data.token);
+        updateProfile({
+          name: response.data.name,
+          email: response.data.email,
+          avatar: response.data.avatar,
+        });
+        setError('');
+        navigation.replace('MainTabs'); 
       }
-    } else {
-      // No account was created in this session
-      setError('Nenhuma conta encontrada na sessão. Por favor, cadastre-se primeiro.');
-      return;
+    } catch (err) {
+      setError(err.response?.data?.message || 'E-mail ou senha incorretos.');
     }
-    
-    setError('');
-    // Simulando o login para irem para o AppPrincipal
-    navigation.replace('MainTabs'); 
   };
 
   return (
@@ -128,7 +133,7 @@ export default function LoginScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#FFF',
   },
   scroll: {
     flexGrow: 1,
@@ -138,6 +143,7 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 40,
+    backgroundColor: '#FFF',
   },
   logo: {
     width: 140,

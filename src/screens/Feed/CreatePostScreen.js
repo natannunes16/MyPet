@@ -42,26 +42,31 @@ export default function CreatePostScreen({ navigation, route }) {
   const isOverLimit = charsLeft < 0;
   const canPost = (content.trim().length > 0 || mediaList.length > 0) && !isOverLimit && !isSubmitting;
 
-  const handlePost = () => {
+  const handlePost = async () => {
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
     setIsSubmitting(true);
     
     const petName = pets && pets.length > 0 ? pets[0].name : null;
-    const authorName = petName ? `${profile.name || 'Você'} & ${petName}` : (profile.name || 'Você');
+    const petId = pets && pets.length > 0 ? pets[0]._id : null;
 
     const newPost = {
-      id: 'user_' + Date.now().toString(),
-      user: authorName,
-      avatar: profile.avatar || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80',
-      time: 'agora',
-      content: content.trim(),
+      caption: content.trim(),
       image: mediaList.length > 0 ? mediaList[0].uri : null,
-      likes: 0,
-      comments: 0,
+      petName,
+      petId
     };
-    addPost(newPost);
-    navigation.goBack();
+
+    try {
+      await addPost(newPost);
+      Alert.alert('Sucesso', 'Publicação criada com sucesso!');
+      navigation.goBack();
+    } catch (e) {
+      Alert.alert('Erro', 'Não foi possível criar a publicação.');
+    } finally {
+      setIsSubmitting(false);
+      isSubmittingRef.current = false;
+    }
   };
 
   const pickImage = async () => {

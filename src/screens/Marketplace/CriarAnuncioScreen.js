@@ -53,17 +53,19 @@ export default function CriarAnuncioScreen({ navigation, route }) {
     }
   };
 
-  const handlePublish = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handlePublish = async () => {
     if (!title || !category || !location) {
       setErrorMsg('Preencha os campos obrigatórios (Título, Categoria e Localização)');
       return;
     }
     setErrorMsg('');
+    setIsSubmitting(true);
 
     const isAdocao = category === 'Adoção' || isDonation;
     
     const newItem = {
-      id: 'market_' + Date.now().toString(),
       name: title,
       image: photos.length > 0 ? photos[0] : 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80',
       tag: isAdocao ? 'ADOÇÃO' : type === 'Serviço' ? 'SERVIÇO' : 'VENDA',
@@ -72,14 +74,21 @@ export default function CriarAnuncioScreen({ navigation, route }) {
       species: category,
       breed: type === 'Animal' ? 'SRD' : 'Geral',
       location: location,
+      description: description,
+      price: price
     };
 
-    addAd(type, newItem);
-    
-    navigation.navigate('MarketplaceHome', { 
-      newTab: type === 'Animal' ? 'Animais' : type === 'Produto' ? 'Produtos' : 'Serviços',
-      timestamp: Date.now()
-    });
+    try {
+      await addAd(type, newItem);
+      navigation.navigate('MarketplaceHome', { 
+        newTab: type === 'Animal' ? 'Animais' : type === 'Produto' ? 'Produtos' : 'Serviços',
+        timestamp: Date.now()
+      });
+    } catch (error) {
+      setErrorMsg('Não foi possível publicar o anúncio.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

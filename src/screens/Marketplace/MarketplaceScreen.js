@@ -13,7 +13,7 @@ const CARD_MARGIN = 8;
 const CARD_WIDTH = (width - 32 - CARD_MARGIN * 2) / 2;
 
 export default function MarketplaceScreen({ navigation, route }) {
-  const { animals, products, services } = useMarketplace();
+  const { animals, products, services, loading, fetchItems } = useMarketplace();
   const [activeTab, setActiveTab] = useState('Animais');
   const [selectedFilter, setSelectedFilter] = useState('');
 
@@ -87,42 +87,71 @@ export default function MarketplaceScreen({ navigation, route }) {
     </View>
   );
 
-  const renderCard = ({ item }) => (
+  const renderCard = ({ item }) => {
+    const localImages = {
+      'Coleira Premium': require('../../../assets/marketplace/coleira_premium.png'),
+      'Petiscos Naturais': require('../../../assets/marketplace/petiscos_naturais.png'),
+      'Cama Confortável': require('../../../assets/marketplace/cama_confortavel.png'),
+      'Brinquedo Interativo': require('../../../assets/marketplace/brinquedo_interativo.png'),
+      'Banho e Tosa': require('../../../assets/marketplace/banho_e_tosa.png'),
+      'Consulta Veterinária': require('../../../assets/marketplace/consulta_veterinaria.png'),
+      'Passeador de Cães': require('../../../assets/marketplace/passeador_de_caes.png'),
+      'Hotel para Pets': require('../../../assets/marketplace/hotel_para_pets.png'),
+    };
+    const defaultImg = 'https://images.unsplash.com/photo-1544568100-847a948585b9?auto=format&fit=crop&w=400&q=80';
+    
+    let imageSource = { uri: defaultImg };
+    if (localImages[item.name]) {
+      imageSource = localImages[item.name];
+    } else if (item.image && typeof item.image === 'string' && (item.image.startsWith('http') || item.image.startsWith('file'))) {
+      imageSource = { uri: item.image };
+    } else if (item.image && typeof item.image !== 'string') {
+      imageSource = item.image; // fallback para caso já seja require via mock
+    }
+
+    return (
     <TouchableOpacity 
       style={styles.card} 
       activeOpacity={0.8}
-      onPress={() => navigation.navigate('DetalheDoAnuncio', { itemId: item.id })}
+      onPress={() => navigation.navigate('DetalheDoAnuncio', { itemId: item._id || item.id })}
     >
       <View style={styles.imageContainer}>
         <Image 
-          source={typeof item.image === 'string' ? { uri: item.image } : item.image} 
+          source={imageSource} 
           style={styles.cardImage} 
         />
         {/* Absolute Tag */}
-        <View style={[styles.tagContainer, { backgroundColor: item.tagColor }]}>
-          <Ionicons 
-            name={item.tag === 'ADOÇÃO' ? 'heart-outline' : 'pricetag-outline'} 
-            size={12} 
-            color="#FFF" 
-          />
-          <Text style={styles.tagText}>{item.tag}</Text>
-        </View>
+        {item.tag && (
+          <View style={[styles.tagContainer, { backgroundColor: item.tagColor || '#1976D2' }]}>
+            <Ionicons 
+              name={item.tag === 'ADOÇÃO' ? 'heart-outline' : 'pricetag-outline'} 
+              size={12} 
+              color="#FFF" 
+            />
+            <Text style={styles.tagText}>{item.tag}</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.cardContent}>
         <View style={styles.cardHeaderRow}>
-          <Text style={styles.cardTitle}>{item.name}</Text>
-          <Text style={styles.cardAge}>{item.age}</Text>
+          <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
+          {item.age && <Text style={styles.cardAge}>{item.age}</Text>}
         </View>
-        <Text style={styles.cardSubtitle}>{item.species} • {item.breed}</Text>
+        <Text style={styles.cardSubtitle} numberOfLines={1}>
+          {[item.species, item.breed].filter(Boolean).join(' • ') || item.type}
+        </Text>
         
-        <View style={styles.cardLocationRow}>
-          <Ionicons name="location-outline" size={12} color={colors.textLight} />
-          <Text style={styles.cardLocationText}>{item.location}</Text>
-        </View>
+        {item.location && (
+          <View style={styles.cardLocationRow}>
+            <Ionicons name="location-outline" size={12} color={colors.textLight} />
+            <Text style={styles.cardLocationText}>{item.location}</Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
-  );
+    );
+  };
 
   const getListData = () => {
     let list = [];
@@ -154,16 +183,26 @@ export default function MarketplaceScreen({ navigation, route }) {
       <FlatList
         data={getListData()}
         extraData={{ animals, products, services, activeTab }}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item._id || item.id || Math.random().toString()}
         numColumns={2}
         ListHeaderComponent={renderHeader}
         renderItem={renderCard}
         contentContainerStyle={styles.listContainer}
         columnWrapperStyle={styles.row}
         showsVerticalScrollIndicator={false}
+        onRefresh={fetchItems}
+        refreshing={loading}
+        ListEmptyComponent={
+          !loading && (
+            <View style={{ alignItems: 'center', marginTop: 40 }}>
+              <Ionicons name="storefront-outline" size={48} color={colors.border} />
+              <Text style={{ marginTop: 12, color: colors.textLight, fontSize: 16 }}>Nenhum anúncio encontrado.</Text>
+            </View>
+          )
+        }
         ListFooterComponent={
           <View style={styles.footerContainer}>
-            <TouchableOpacity style={styles.refreshBtn}>
+            <TouchableOpacity style={styles.refreshBtn} onPress={fetchItems}>
               <Ionicons name="sync-outline" size={28} color={colors.primary} />
             </TouchableOpacity>
           </View>

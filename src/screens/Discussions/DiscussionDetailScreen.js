@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { 
   View, Text, StyleSheet, FlatList, Image, TouchableOpacity, 
-  TextInput, KeyboardAvoidingView, Platform, SafeAreaView, Keyboard, Animated
+  TextInput, KeyboardAvoidingView, Platform, Keyboard, Animated
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import { mockDiscussions } from '../../mocks/discussionsMocks';
 import { useFeed } from '../../context/FeedContext';
@@ -38,10 +39,14 @@ const AnimatedLikeButton = ({ initialLikes }) => {
 export default function DiscussionDetailScreen({ route, navigation }) {
   const { discussionId } = route.params;
   const { discussions } = useFeed();
-  const initialDiscussion = discussions.find(d => d.id === discussionId);
+  const initialDiscussion = discussions.find(d => (d._id || d.id) === discussionId);
   
   const [discussion, setDiscussion] = useState(initialDiscussion);
-  const [comments, setComments] = useState(initialDiscussion?.comments || []);
+  const [comments, setComments] = useState(() => {
+    if (Array.isArray(initialDiscussion?.comments)) return initialDiscussion.comments;
+    if (Array.isArray(initialDiscussion?.commentsList)) return initialDiscussion.commentsList;
+    return [];
+  });
   const [inputText, setInputText] = useState('');
   const [replyingTo, setReplyingTo] = useState(null); // { commentId, authorName }
   const [isLiked, setIsLiked] = useState(false);
@@ -76,7 +81,7 @@ export default function DiscussionDetailScreen({ route, navigation }) {
         return c;
       }));
     } else {
-      setComments(prev => [...prev, newComment]);
+      setComments(prev => [...(Array.isArray(prev) ? prev : []), newComment]);
     }
 
     setInputText('');
@@ -89,12 +94,16 @@ export default function DiscussionDetailScreen({ route, navigation }) {
     inputRef.current?.focus();
   };
 
+  const isMyDiscussion = discussion.authorId === (profile?._id || profile?.id);
+  const displayAuthor = isMyDiscussion && profile?.name ? profile.name : discussion.author;
+  const displayAvatar = isMyDiscussion && profile?.avatar ? profile.avatar : (discussion.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80');
+
   const renderPost = () => (
     <View style={styles.postContainer}>
       <View style={styles.postHeader}>
-        <Image source={{ uri: discussion.avatar }} style={styles.postAvatar} />
+        <Image source={{ uri: displayAvatar }} style={styles.postAvatar} />
         <View style={styles.postHeaderInfo}>
-          <Text style={styles.postAuthor}>{discussion.author}</Text>
+          <Text style={styles.postAuthor}>{displayAuthor}</Text>
           <View style={styles.postMetaRow}>
             <Text style={styles.postTime}>{discussion.time}</Text>
             {discussion.category && (
@@ -122,10 +131,6 @@ export default function DiscussionDetailScreen({ route, navigation }) {
         >
           <Ionicons name={isLiked ? "heart" : "heart-outline"} size={20} color={isLiked ? "#FF3B30" : colors.textLight} />
           <Text style={[styles.actionText, isLiked && { color: "#FF3B30" }]}>Apoiar ({likeCount})</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionBtn} onPress={() => inputRef.current?.focus()}>
-          <Ionicons name="chatbubble-outline" size={20} color={colors.textLight} />
-          <Text style={styles.actionText}>Comentar</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.actionBtn}>
           <Ionicons name="share-social-outline" size={20} color={colors.textLight} />
@@ -207,8 +212,8 @@ export default function DiscussionDetailScreen({ route, navigation }) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <FlatList
-          data={comments}
-          keyExtractor={item => item.id}
+          data={Array.isArray(comments) ? comments : []}
+          keyExtractor={(item, index) => (item && item.id) ? item.id.toString() : index.toString()}
           ListHeaderComponent={renderPost}
           renderItem={renderComment}
           contentContainerStyle={styles.listContent}

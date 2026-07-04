@@ -1,50 +1,88 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, Image, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useFeed } from '../../context/FeedContext';
+import { usePet } from '../../context/PetContext';
 import MainHeader from '../../components/Header/MainHeader';
 
 export default function DiscussionsScreen({ navigation }) {
-  const { discussions } = useFeed();
+  const { discussions, loadingDiscussions, fetchDiscussions, deleteDiscussion } = useFeed();
+  const { profile } = usePet();
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.card}
-      activeOpacity={0.7}
-      onPress={() => navigation.navigate('DiscussionDetail', { discussionId: item.id })}
-    >
-      <View style={styles.header}>
-        <Image source={{ uri: item.avatar }} style={styles.avatar} />
-        <View style={styles.headerInfo}>
-          <Text style={styles.title}>{item.title}</Text>
-          <View style={styles.metaRow}>
-            <Text style={styles.subtitle}>{item.author}</Text>
-            {item.category && (
-              <>
-                <Text style={styles.dot}> • </Text>
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{item.category}</Text>
-                </View>
-              </>
-            )}
+  const confirmDeleteDiscussion = (id) => {
+    Alert.alert('Excluir Discussão', 'Tem certeza que deseja excluir esta discussão?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Excluir', style: 'destructive', onPress: () => deleteDiscussion(id) }
+    ]);
+  };
+
+  const renderItem = ({ item }) => {
+    const discussionId = item._id || item.id;
+    const currentUserId = profile?._id || profile?.id;
+    const isMyDiscussion = item.authorId === currentUserId;
+
+    return (
+      <TouchableOpacity 
+        style={styles.card}
+        activeOpacity={0.7}
+        onPress={() => navigation.navigate('DiscussionDetail', { discussionId })}
+      >
+        <View style={[styles.header, { justifyContent: 'space-between' }]}>
+          <View style={{ flexDirection: 'row', flex: 1 }}>
+            <Image source={{ uri: (isMyDiscussion && profile?.avatar) ? profile.avatar : (item.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80') }} style={styles.avatar} />
+            <View style={styles.headerInfo}>
+              <Text style={styles.title}>{item.title}</Text>
+              <View style={styles.metaRow}>
+                <Text style={styles.subtitle}>{(isMyDiscussion && profile?.name) ? profile.name : (item.author || 'Usuário')}</Text>
+                {item.category && (
+                  <>
+                    <Text style={styles.dot}> • </Text>
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{item.category}</Text>
+                    </View>
+                  </>
+                )}
+              </View>
+            </View>
           </View>
+          {isMyDiscussion && (
+            <TouchableOpacity onPress={() => confirmDeleteDiscussion(discussionId)} style={{ padding: 5, alignSelf: 'flex-start' }}>
+              <Ionicons name="trash-outline" size={20} color={colors.error || '#D32F2F'} />
+            </TouchableOpacity>
+          )}
         </View>
-      </View>
-      <Text style={styles.content}>{item.content}</Text>
-    </TouchableOpacity>
-  );
+        <Text style={styles.content}>{item.content}</Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <MainHeader subtitle="discussões" navigation={navigation} />
-      <FlatList
-        data={discussions}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={{ padding: 16 }}
-        showsVerticalScrollIndicator={false}
-      />
+      {loadingDiscussions ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={{ marginTop: 10, color: colors.textLight }}>Carregando discussões...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={discussions}
+          keyExtractor={(item) => item._id || item.id || Math.random().toString()}
+          renderItem={renderItem}
+          ListEmptyComponent={
+            <View style={{ alignItems: 'center', marginTop: 40 }}>
+              <Ionicons name="chatbubbles-outline" size={48} color={colors.border} />
+              <Text style={{ marginTop: 12, color: colors.textLight, fontSize: 16 }}>Nenhuma discussão criada ainda.</Text>
+            </View>
+          }
+          contentContainerStyle={{ padding: 16, flexGrow: 1 }}
+          showsVerticalScrollIndicator={false}
+          onRefresh={fetchDiscussions}
+          refreshing={loadingDiscussions}
+        />
+      )}
       <TouchableOpacity 
         style={styles.fab} 
         onPress={() => navigation.navigate('CreateDiscussion')}

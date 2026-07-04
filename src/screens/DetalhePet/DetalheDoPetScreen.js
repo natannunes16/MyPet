@@ -1,23 +1,51 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { usePet } from '../../context/PetContext';
 
 export default function DetalheDoPetScreen({ route, navigation }) {
-  // Use mock data mimicking the design for display
-  const mockPet = {
-    name: 'Bolinha',
-    species: 'Cão',
-    breed: 'Beagle',
-    age: '3 Anos',
-    image: 'https://images.unsplash.com/photo-1537151608804-ea2f1ea3b306?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80',
+  const { deletePet } = usePet();
+  const pet = route.params?.pet;
+
+  if (!pet) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={{ textAlign: 'center', marginTop: 20 }}>Pet não encontrado.</Text>
+      </SafeAreaView>
+    );
+  }
+
+  // Fallback para campos que ainda não estão no backend da Fase 2
+  const petData = {
+    ...pet,
+    species: pet.species || 'Cão',
     health: {
       weight: '12 kg',
       lastVaccine: '15 Out 2023',
       allergies: 'Nenhuma'
     },
     gpsStatus: 'Desconectado',
-    gpsMessage: 'Nenhum dispositivo de rastreamento ativo encontrado para Bolinha no momento.',
+    gpsMessage: 'Nenhum dispositivo de rastreamento ativo encontrado para este pet no momento.',
     notes: 'Bolinha é muito dócil, mas um pouco medroso com barulhos muito altos. Adora passeios matinais e tem preferência por ração úmida de frango.'
+  };
+
+  const handleRemove = () => {
+    Alert.alert('Confirmar', 'Deseja realmente remover este pet?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { 
+        text: 'Remover', 
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deletePet(pet._id);
+            Alert.alert('Sucesso', 'Pet removido com sucesso!');
+            navigation.goBack();
+          } catch (e) {
+            Alert.alert('Erro', 'Não foi possível remover o pet.');
+          }
+        }
+      }
+    ]);
   };
 
   return (
@@ -36,20 +64,20 @@ export default function DetalheDoPetScreen({ route, navigation }) {
         {/* Avatar & Header */}
         <View style={styles.profileHeader}>
           <View style={styles.avatarContainer}>
-            <Image source={{ uri: mockPet.image }} style={styles.avatar} />
+            <Image source={{ uri: petData.image || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80' }} style={styles.avatar} />
           </View>
-          <Text style={styles.petName}>{mockPet.name}</Text>
+          <Text style={styles.petName}>{petData.name}</Text>
           
           <View style={styles.tagsContainer}>
             <View style={[styles.tag, { backgroundColor: '#FFD500' }]}>
               <Ionicons name="paw" size={12} color="#000" style={{ marginRight: 4 }} />
-              <Text style={[styles.tagText, { color: '#000', fontWeight: 'bold' }]}>{mockPet.species}</Text>
+              <Text style={[styles.tagText, { color: '#000', fontWeight: 'bold' }]}>{petData.species}</Text>
             </View>
             <View style={[styles.tag, { backgroundColor: '#E0E0E0' }]}>
-              <Text style={styles.tagText}>{mockPet.breed}</Text>
+              <Text style={styles.tagText}>{petData.breed}</Text>
             </View>
             <View style={[styles.tag, { backgroundColor: '#E0E0E0' }]}>
-              <Text style={styles.tagText}>{mockPet.age}</Text>
+              <Text style={styles.tagText}>{petData.age} anos</Text>
             </View>
           </View>
         </View>
@@ -62,17 +90,17 @@ export default function DetalheDoPetScreen({ route, navigation }) {
           </View>
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Peso</Text>
-            <Text style={styles.rowValue}>{mockPet.health.weight}</Text>
+            <Text style={styles.rowValue}>{petData.health.weight}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Última Vacina</Text>
-            <Text style={styles.rowValue}>{mockPet.health.lastVaccine}</Text>
+            <Text style={styles.rowValue}>{petData.health.lastVaccine}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Alergias</Text>
-            <Text style={styles.rowValue}>{mockPet.health.allergies}</Text>
+            <Text style={styles.rowValue}>{petData.health.allergies}</Text>
           </View>
         </View>
 
@@ -82,10 +110,10 @@ export default function DetalheDoPetScreen({ route, navigation }) {
             <Ionicons name="location-outline" size={20} color="#1E1E1E" />
             <Text style={styles.cardTitle}>Rastreador GPS</Text>
             <View style={styles.badgeRed}>
-              <Text style={styles.badgeRedText}>{mockPet.gpsStatus}</Text>
+              <Text style={styles.badgeRedText}>{petData.gpsStatus}</Text>
             </View>
           </View>
-          <Text style={styles.gpsDesc}>{mockPet.gpsMessage}</Text>
+          <Text style={styles.gpsDesc}>{petData.gpsMessage}</Text>
           <TouchableOpacity style={styles.btnVincular}>
             <Ionicons name="link-outline" size={18} color="#FFF" style={{ marginRight: 8 }} />
             <Text style={styles.btnVincularText}>Vincular rastreador</Text>
@@ -98,16 +126,16 @@ export default function DetalheDoPetScreen({ route, navigation }) {
             <Ionicons name="information-circle-outline" size={20} color="#1976D2" />
             <Text style={styles.cardTitle}>Observações</Text>
           </View>
-          <Text style={styles.notesText}>{mockPet.notes}</Text>
+          <Text style={styles.notesText}>{petData.notes}</Text>
         </View>
 
         {/* Action Buttons */}
         <View style={styles.actionsContainer}>
-          <TouchableOpacity style={styles.btnEdit}>
+          <TouchableOpacity style={styles.btnEdit} onPress={() => navigation.navigate('EditPet', { pet: petData })}>
             <Ionicons name="pencil" size={18} color="#1E1E1E" style={{ marginRight: 8 }} />
             <Text style={styles.btnEditText}>Editar informações</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.btnRemove}>
+          <TouchableOpacity style={styles.btnRemove} onPress={handleRemove}>
             <Ionicons name="trash-outline" size={18} color="#D32F2F" style={{ marginRight: 8 }} />
             <Text style={styles.btnRemoveText}>Remover pet</Text>
           </TouchableOpacity>

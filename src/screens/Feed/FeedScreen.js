@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, Image, SafeAreaView,
+  View, Text, StyleSheet, FlatList, Image,
   TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, Modal,
-  Dimensions,
+  Dimensions, ActivityIndicator, Alert
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useFeed } from '../../context/FeedContext';
+import { usePet } from '../../context/PetContext';
 import * as ImagePicker from 'expo-image-picker';
 import MainHeader from '../../components/Header/MainHeader';
 
@@ -45,7 +47,8 @@ function AdaptiveImage({ uri }) {
 }
 
 export default function FeedScreen({ navigation }) {
-  const { posts, stories } = useFeed();
+  const { posts, stories, loadingPosts, fetchPosts, deletePost, addComment } = useFeed();
+  const { profile } = usePet();
 
   // State for likes: { postId: true/false }
   const [likedPosts, setLikedPosts] = useState({});
@@ -61,15 +64,20 @@ export default function FeedScreen({ navigation }) {
   const [commentText, setCommentText] = useState('');
 
   // Helper to get like count for a post (fallback to post.likes)
-  const getLikeCount = (post) => likeCounts[post.id] !== undefined ? likeCounts[post.id] : post.likes;
-  const getCommentCount = (post) => commentCounts[post.id] !== undefined ? commentCounts[post.id] : post.comments;
+  const getLikeCount = (post) => {
+    const id = post._id || post.id;
+    return likeCounts[id] !== undefined ? likeCounts[id] : (post.likes || 0);
+  };
+  const getCommentCount = (post) => {
+    return post.commentsList?.length || post.comments || 0;
+  };
 
   const toggleLike = (postId) => {
     const wasLiked = likedPosts[postId];
     setLikedPosts(prev => ({ ...prev, [postId]: !wasLiked }));
     setLikeCounts(prev => {
-      const post = posts.find(p => p.id === postId);
-      const baseLikes = post ? post.likes : 0;
+      const post = posts.find(p => (p._id || p.id) === postId);
+      const baseLikes = post ? (post.likes || 0) : 0;
       const current = prev[postId] !== undefined ? prev[postId] : baseLikes;
       return { ...prev, [postId]: current + (wasLiked ? -1 : 1) };
     });
@@ -80,25 +88,21 @@ export default function FeedScreen({ navigation }) {
     setCommentModalVisible(true);
   };
 
-  const sendComment = () => {
-    if (!commentText.trim()) return;
-    const newComment = {
-      id: Date.now().toString(),
-      text: commentText.trim(),
-      user: 'Você',
-      time: 'agora',
-    };
-    setComments(prev => ({
-      ...prev,
-      [activePostId]: [...(prev[activePostId] || []), newComment],
-    }));
-    setCommentCounts(prev => {
-      const post = posts.find(p => p.id === activePostId);
-      const baseCount = post ? post.comments : 0;
-      const current = prev[activePostId] !== undefined ? prev[activePostId] : baseCount;
-      return { ...prev, [activePostId]: current + 1 };
-    });
-    setCommentText('');
+  const sendComment = async () => {
+    if (!commentText.trim() || !activePostId) return;
+    try {
+      await addComment(activePostId, commentText.trim());
+      setCommentText('');
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível adicionar o comentário.');
+    }
+  };
+
+  const confirmDeletePost = (postId) => {
+    Alert.alert('Excluir Publicação', 'Tem certeza que deseja excluir esta publicação?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Excluir', style: 'destructive', onPress: () => deletePost(postId) }
+    ]);
   };
 
   const renderStory = ({ item, index }) => (
@@ -107,7 +111,7 @@ export default function FeedScreen({ navigation }) {
       activeOpacity={0.7}
       onPress={() => navigation.navigate('Story', { storyIndex: index })}
     >
-      <View style={[styles.storyBorder, item.isViewed && styles.storyBorderViewed]}>
+      <View style={styles.storyBorder}>
         <Image source={{ uri: item.avatar }} style={styles.storyAvatar} />
       </View>
       <Text style={styles.storyUser} numberOfLines={1}>{item.user}</Text>
@@ -115,25 +119,46 @@ export default function FeedScreen({ navigation }) {
   );
 
   const renderPost = ({ item }) => {
-    const isLiked = likedPosts[item.id];
+    const postId = item._id || item.id;
+    const isLiked = likedPosts[postId];
+    
+    // Check if the current user is the author of this post
+    const currentUserId = profile?._id || profile?.id;
+    const isMyPost = item.authorId === currentUserId || item.author === currentUserId || item.userId === currentUserId;
+
+    // Fix backend mapping and reactively use updated profile
+    const userAvatar = isMyPost && profile?.avatar ? profile.avatar : (item.authorAvatar || item.avatar || item.author?.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80');
+    
+    let userName = item.authorName || item.user || item.author?.name || 'Usuário';
+    if (isMyPost && profile?.name) {
+      userName = item.petName ? `${profile.name} & ${item.petName}` : profile.name;
+    }
+
     return (
       <View style={styles.card}>
-        <View style={styles.postHeader}>
-          <Image source={{ uri: item.avatar }} style={styles.avatar} />
-          <View>
-            <Text style={styles.userName}>{item.user}</Text>
-            <Text style={styles.timeText}>{item.time}</Text>
+        <View style={[styles.postHeader, { justifyContent: 'space-between' }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Image source={{ uri: userAvatar }} style={styles.avatar} />
+            <View>
+              <Text style={styles.userName}>{userName}</Text>
+              <Text style={styles.timeText}>{item.time || 'recentemente'}</Text>
+            </View>
           </View>
+          {isMyPost && (
+            <TouchableOpacity onPress={() => confirmDeletePost(postId)} style={{ padding: 5 }}>
+              <Ionicons name="trash-outline" size={20} color={colors.error || '#D32F2F'} />
+            </TouchableOpacity>
+          )}
         </View>
 
-        {item.content ? <Text style={styles.content}>{item.content}</Text> : null}
+        {item.content || item.caption ? <Text style={styles.content}>{item.content || item.caption}</Text> : null}
 
         {item.image && (
           <AdaptiveImage uri={item.image} />
         )}
 
         <View style={styles.postFooter}>
-          <TouchableOpacity style={styles.action} onPress={() => toggleLike(item.id)}>
+          <TouchableOpacity style={styles.action} onPress={() => toggleLike(postId)}>
             <Ionicons
               name={isLiked ? 'heart' : 'heart-outline'}
               size={22}
@@ -143,7 +168,7 @@ export default function FeedScreen({ navigation }) {
               {getLikeCount(item)}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.action} onPress={() => openComments(item.id)}>
+          <TouchableOpacity style={styles.action} onPress={() => openComments(postId)}>
             <Ionicons name="chatbubble-outline" size={22} color={colors.textLight} />
             <Text style={styles.actionText}>{getCommentCount(item)}</Text>
           </TouchableOpacity>
@@ -199,7 +224,7 @@ export default function FeedScreen({ navigation }) {
         horizontal
         showsHorizontalScrollIndicator={false}
         data={stories}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item._id || item.id || Math.random().toString()}
         renderItem={renderStory}
         ListHeaderComponent={renderAddStory}
         contentContainerStyle={styles.storiesList}
@@ -207,20 +232,35 @@ export default function FeedScreen({ navigation }) {
     </View>
   );
 
-  const activePostComments = activePostId ? (comments[activePostId] || []) : [];
+  const activePostComments = activePostId ? (posts.find(p => (p._id || p.id) === activePostId)?.commentsList || []) : [];
 
   return (
     <SafeAreaView style={styles.container}>
       <MainHeader subtitle="feed" navigation={navigation} />
 
-      <FlatList
-        data={posts}
-        keyExtractor={item => item.id}
-        renderItem={renderPost}
-        ListHeaderComponent={renderHeader}
-        contentContainerStyle={{ padding: 16 }}
-        showsVerticalScrollIndicator={false}
-      />
+      {loadingPosts ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={{ marginTop: 10, color: colors.textLight }}>Carregando publicações...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={posts}
+          keyExtractor={item => item._id || item.id || Math.random().toString()}
+          renderItem={renderPost}
+          ListHeaderComponent={renderHeader}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="images-outline" size={48} color={colors.border} />
+              <Text style={styles.emptyText}>Nenhuma publicação encontrada.</Text>
+            </View>
+          }
+          contentContainerStyle={{ padding: 16, flexGrow: 1 }}
+          showsVerticalScrollIndicator={false}
+          onRefresh={fetchPosts}
+          refreshing={loadingPosts}
+        />
+      )}
       <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('CreatePost')}>
         <Ionicons name="create-outline" size={26} color="#FFF" />
       </TouchableOpacity>
@@ -249,7 +289,7 @@ export default function FeedScreen({ navigation }) {
             {/* Comments list */}
             <FlatList
               data={activePostComments}
-              keyExtractor={item => item.id}
+              keyExtractor={item => item._id || Math.random().toString()}
               style={styles.commentsList}
               ListEmptyComponent={
                 <View style={styles.emptyComments}>
@@ -261,12 +301,18 @@ export default function FeedScreen({ navigation }) {
               renderItem={({ item: comment }) => (
                 <View style={styles.commentItem}>
                   <View style={styles.commentAvatarPlaceholder}>
-                    <Ionicons name="person" size={18} color={colors.textLight} />
+                    {comment.avatar ? (
+                      <Image source={{ uri: comment.avatar }} style={{ width: '100%', height: '100%', borderRadius: 18 }} />
+                    ) : (
+                      <Ionicons name="person" size={18} color={colors.textLight} />
+                    )}
                   </View>
                   <View style={styles.commentContent}>
                     <View style={styles.commentHeader}>
-                      <Text style={styles.commentUser}>{comment.user}</Text>
-                      <Text style={styles.commentTime}>{comment.time}</Text>
+                      <Text style={styles.commentUser}>{comment.user || 'Usuário'}</Text>
+                      <Text style={styles.commentTime}>
+                        {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString() : 'agora'}
+                      </Text>
                     </View>
                     <Text style={styles.commentText}>{comment.text}</Text>
                   </View>

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Tou
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePet } from '../../context/PetContext';
+import api from '../../services/api';
 
 export default function RegisterScreen({ navigation }) {
   const { updateProfile, clearPets } = usePet();
@@ -15,7 +16,7 @@ export default function RegisterScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!name || !email || !password || !confirmPassword) {
       setErrorMsg('Por favor, preencha todos os campos.');
       return;
@@ -51,18 +52,31 @@ export default function RegisterScreen({ navigation }) {
 
     setErrorMsg('');
     
-    // Atualiza o contexto do perfil global com os dados cadastrados
-    updateProfile({ name, email, password });
-    
-    // Limpa os pets da memória e do AsyncStorage para simular uma conta zerada
-    clearPets();
-    AsyncStorage.removeItem('@myPetPets').catch(console.warn);
-    
-    navigation.replace('Login', { 
-      registeredEmail: email, 
-      registeredPassword: password,
-      newlyRegistered: true
-    });
+    try {
+      const response = await api.post('/auth/register', { 
+        name, 
+        email: email.trim().toLowerCase(), 
+        password 
+      });
+      
+      if (response.data && response.data.token) {
+        updateProfile({
+          name: response.data.name,
+          email: response.data.email,
+          avatar: response.data.avatar,
+        });
+        
+        await AsyncStorage.setItem('@myPetToken', response.data.token);
+        
+        // Limpa os pets da memória e do AsyncStorage para simular uma conta zerada
+        clearPets();
+        AsyncStorage.removeItem('@myPetPets').catch(console.warn);
+        
+        navigation.replace('MainTabs'); 
+      }
+    } catch (err) {
+      setErrorMsg(err.response?.data?.message || 'Erro ao criar conta. Tente novamente.');
+    }
   };
 
   return (
@@ -178,7 +192,7 @@ export default function RegisterScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#FFF',
   },
   scroll: {
     flexGrow: 1,
@@ -188,6 +202,7 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 40,
+    backgroundColor: '#FFF',
   },
   logoContainer: {
     width: 64,

@@ -1,23 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, Text, StyleSheet, SafeAreaView, TouchableOpacity, 
   Image, ImageBackground, Modal, ScrollView, Dimensions, Platform
 } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { colors } from '../../theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { usePet } from '../../context/PetContext';
 import MainHeader from '../../components/Header/MainHeader';
+import api from '../../services/api';
 
 const { width, height } = Dimensions.get('window');
+
+const mapHtml = `
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <style>
+      body { margin: 0; padding: 0; }
+      iframe { width: 100vw; height: 100vh; border: none; }
+    </style>
+  </head>
+  <body>
+    <iframe 
+      src="https://maps.google.com/maps?q=Unifacisa+Campina+Grande+58411-020&t=&z=16&ie=UTF8&iwloc=&output=embed" 
+      frameborder="0" 
+      allowfullscreen>
+    </iframe>
+  </body>
+</html>
+`;
 
 export default function LocalizationScreen({ navigation }) {
   const { profile } = usePet();
   const [modalVisible, setModalVisible] = useState(false);
   const [duration, setDuration] = useState('1h');
+  const [locationData, setLocationData] = useState(null);
+
+  useEffect(() => {
+    const fetchLocation = async () => {
+      try {
+        const res = await api.get('/locations');
+        if (res.data && res.data.length > 0) {
+          // Assume the latest location or the one for the current pet
+          const petLocation = res.data.find(loc => loc.petId === (profile.id || profile._id)) || res.data[0];
+          setLocationData(petLocation);
+        }
+      } catch (error) {
+        console.warn('Failed to fetch location:', error);
+      }
+    };
+    fetchLocation();
+  }, [profile]);
 
   // Pet avatar placeholder se não tiver
   const petAvatar = profile.avatar ? { uri: profile.avatar } : { uri: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80' };
   const petName = profile.name || 'Max';
+
+  const isLost = locationData?.isLost;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -33,8 +74,10 @@ export default function LocalizationScreen({ navigation }) {
             <View style={styles.petInfo}>
               <Text style={styles.petName}>{petName}</Text>
               <View style={styles.statusRow}>
-                <View style={styles.statusDot} />
-                <Text style={styles.statusText}>Conectado • Atualizado agora</Text>
+                <View style={[styles.statusDot, isLost && { backgroundColor: '#D32F2F' }]} />
+                <Text style={[styles.statusText, isLost && { color: '#D32F2F', fontWeight: 'bold' }]}>
+                  {isLost ? 'Modo Perdido Ativo' : 'Conectado • Atualizado agora'}
+                </Text>
               </View>
             </View>
             <TouchableOpacity style={styles.dropdownBtn}>
@@ -52,27 +95,28 @@ export default function LocalizationScreen({ navigation }) {
                 height="100%" 
                 frameBorder="0" 
                 style={{ border: 0 }}
-                src="https://maps.google.com/maps?q=Unifacisa+Campina+Grande&t=&z=16&ie=UTF8&iwloc=&output=embed"
+                src="https://maps.google.com/maps?q=Unifacisa+Campina+Grande+58411-020&t=&z=16&ie=UTF8&iwloc=&output=embed"
                 allowFullScreen={true}
               />
             </div>
           ) : (
-            <ImageBackground 
-              source={require('../../../assets/mapa_localizacao_fundo.png')} 
-              style={styles.mapBackground}
-              resizeMode="cover"
-            >
-              <View style={styles.mapCenter}>
-                {/* Fake Map Pin */}
-                <View style={styles.pinWrapper}>
-                  <View style={styles.pinBubble}>
-                    <View style={styles.pinInnerDark} />
-                  </View>
-                  <View style={styles.pinTriangle} />
-                </View>
-              </View>
-            </ImageBackground>
+            <WebView
+              source={{ html: mapHtml }}
+              style={StyleSheet.absoluteFillObject}
+              scrollEnabled={false}
+              bounces={false}
+            />
           )}
+
+          <View style={[StyleSheet.absoluteFillObject, styles.mapCenter]} pointerEvents="none">
+            {/* Fake Map Pin */}
+            <View style={styles.pinWrapper}>
+              <View style={styles.pinBubble}>
+                <View style={styles.pinInnerDark} />
+              </View>
+              <View style={styles.pinTriangle} />
+            </View>
+          </View>
 
           <View style={styles.mapOverlay} pointerEvents="box-none">
             <View style={styles.infoBox}>

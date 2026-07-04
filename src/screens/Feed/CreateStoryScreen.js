@@ -13,20 +13,25 @@ export default function CreateStoryScreen({ route, navigation }) {
   const { profile } = usePet();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
 
-    const newStory = {
-      id: 'story_' + Date.now(),
-      user: profile.name || 'Você',
-      avatar: profile.avatar || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80',
-      storyImages: [imageUri],
-      isViewed: true,
-    };
+    try {
+      const newStory = {
+        id: 'story_' + Date.now(),
+        user: profile?.name || 'Você',
+        avatar: profile?.avatar || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80',
+        storyImages: [imageUri],
+        isViewed: true,
+      };
 
-    addStory(newStory);
-    navigation.goBack();
+      await addStory(newStory);
+      navigation.goBack();
+    } catch (error) {
+      console.warn(error);
+      setIsSubmitting(false);
+    }
   };
 
   return (

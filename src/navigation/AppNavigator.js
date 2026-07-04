@@ -10,6 +10,7 @@ import ForgotPasswordScreen from '../screens/Auth/ForgotPasswordScreen';
 import AddFirstPetScreen from '../screens/Auth/AddFirstPetScreen';
 import DetalheDoPetScreen from '../screens/DetalhePet/DetalheDoPetScreen';
 import EditPetScreen from '../screens/EditPet/EditPetScreen';
+import CadastrarPetScreen from '../screens/CadastrarPet/CadastrarPetScreen';
 import NotificationsScreen from '../screens/Notifications/NotificationsScreen';
 import TabNavigator from './TabNavigator';
 import ImageCropScreen from '../screens/Feed/ImageCropScreen';
@@ -31,6 +32,7 @@ export default function AppNavigator() {
         
         <Stack.Screen name="DetalheDoPet" component={DetalheDoPetScreen} />
         <Stack.Screen name="EditPet" component={EditPetScreen} />
+        <Stack.Screen name="CadastrarPet" component={CadastrarPetScreen} />
         <Stack.Screen name="Notifications" component={NotificationsScreen} />
         <Stack.Screen name="MainTabs" component={TabNavigator} />
         <Stack.Screen name="ImageCrop" component={ImageCropScreen} options={{ animation: 'slide_from_bottom' }} />
